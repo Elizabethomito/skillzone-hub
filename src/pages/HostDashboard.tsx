@@ -9,11 +9,12 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '@/context/AuthContext';
 import { events as eventsApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { QrCode, ChevronDown, ChevronUp, RefreshCw, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { QrCode, ChevronDown, ChevronUp, RefreshCw, CheckCircle, Clock, AlertTriangle, Copy, Check } from 'lucide-react';
 import type { Event, RegistrationWithStudent, CheckInCodeResponse } from '@/lib/types';
 
 function statusBadgeClass(s: string) {
@@ -39,6 +40,7 @@ function EventPanel({ event, token, onRefresh }: EventPanelProps) {
   const [open, setOpen] = useState(false);
   const [regs, setRegs] = useState<RegistrationWithStudent[]>([]);
   const [qrData, setQrData] = useState<CheckInCodeResponse | null>(null);
+  const [copied, setCopied] = useState(false);
   const [loadingRegs, setLoadingRegs] = useState(false);
   const [loadingQr, setLoadingQr] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -96,8 +98,11 @@ function EventPanel({ event, token, onRefresh }: EventPanelProps) {
 
   const copyToken = () => {
     if (!qrData) return;
-    navigator.clipboard.writeText(JSON.stringify({ token: qrData.token }));
+    const payload = JSON.stringify({ token: qrData.token });
+    navigator.clipboard.writeText(payload);
+    setCopied(true);
     toast({ title: 'QR payload copied to clipboard' });
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const conflicts = regs.filter((r) => r.status === 'conflict_pending');
@@ -151,17 +156,42 @@ function EventPanel({ event, token, onRefresh }: EventPanelProps) {
       {/* QR Code display */}
       {qrData && (
         <div className="border-t border-border bg-muted/30 p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <p className="mb-1 text-sm font-medium text-foreground">Check-in QR Payload</p>
-              <p className="text-xs text-muted-foreground mb-2">
-                Valid for {Math.round(qrData.expires_in_seconds / 3600)}h. Display this on the projector. Students scan it with their app.
-              </p>
-              <code className="block rounded-lg border border-border bg-background p-3 text-xs font-mono break-all text-foreground">
-                {`{"token":"${qrData.token.slice(0, 40)}…"}`}
-              </code>
+          <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
+            {/* QR image — project this on screen */}
+            <div className="shrink-0 rounded-xl border-4 border-white bg-white p-2 shadow-lg">
+              <QRCodeSVG
+                value={JSON.stringify({ token: qrData.token })}
+                size={180}
+                level="M"
+              />
             </div>
-            <Button size="sm" variant="outline" onClick={copyToken}>Copy</Button>
+
+            {/* Info panel */}
+            <div className="flex-1 min-w-0 space-y-3">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Check-in QR Code</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Display on the projector. Students open their app → Events →
+                  <strong> Scan QR Check-in</strong> and point their camera here.
+                  Valid for{' '}
+                  <strong>{Math.round(qrData.expires_in_seconds / 3600)} hours</strong>{' '}
+                  (scan window). Badges sync later — no expiry on the sync step.
+                </p>
+              </div>
+
+              {/* Raw payload for copy/paste demo */}
+              <div>
+                <p className="mb-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">QR payload (for manual curl demo)</p>
+                <code className="block rounded-lg border border-border bg-background p-2.5 text-xs font-mono break-all text-foreground leading-relaxed">
+                  {`{"token":"${qrData.token.slice(0, 48)}…"}`}
+                </code>
+              </div>
+
+              <Button size="sm" variant="outline" onClick={copyToken} className="gap-2">
+                {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? 'Copied!' : 'Copy full payload'}
+              </Button>
+            </div>
           </div>
         </div>
       )}
