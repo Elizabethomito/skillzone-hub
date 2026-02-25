@@ -17,9 +17,15 @@ const publicLinks = [
   { to: '/who-this-is-for', label: 'Who This Is For' },
 ];
 
-const authLinks = [
+const studentLinks = [
   { to: '/events', label: 'Events' },
   { to: '/dashboard', label: 'Dashboard' },
+];
+
+const companyLinks = [
+  { to: '/events', label: 'Events' },
+  { to: '/dashboard', label: 'Dashboard' },
+  { to: '/host', label: 'Host Dashboard' },
 ];
 
 export default function Header() {
@@ -27,6 +33,7 @@ export default function Header() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
 
+  const authLinks = user?.role === 'company' ? companyLinks : studentLinks;
   const navLinks = isAuthenticated ? [...publicLinks, ...authLinks] : publicLinks;
 
   const isActive = (path: string) => location.pathname === path;
@@ -68,10 +75,10 @@ export default function Header() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                    {user?.first_name?.[0] || user?.organization_name?.[0] || 'U'}
+                    {user?.name?.[0]?.toUpperCase() ?? 'U'}
                   </div>
                   <span className="text-sm font-medium text-foreground">
-                    {user?.role === 'organization' ? user.organization_name : user?.first_name}
+                    {user?.name?.split(' ')[0] ?? ''}
                   </span>
                 </Button>
               </DropdownMenuTrigger>

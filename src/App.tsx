@@ -14,6 +14,8 @@ import SignUp from '@/pages/SignUp';
 import Events from '@/pages/Events';
 import Dashboard from '@/pages/Dashboard';
 import Profile from '@/pages/Profile';
+import CheckIn from '@/pages/CheckIn';
+import HostDashboard from '@/pages/HostDashboard';
 import NotFound from '@/pages/NotFound';
 
 const queryClient = new QueryClient();
@@ -36,6 +38,9 @@ const App = () => (
                 <Route path="/events" element={<Events />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/checkin/:eventId" element={<CheckIn />} />
+                <Route path="/host" element={<HostDashboard />} />
+                <Route path="/host/events/:eventId" element={<HostDashboard />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Route>
