@@ -1,23 +1,17 @@
 /**
- * Service Worker registration + helpers.
- * Call registerSW() once at app startup.
+ * Service Worker helpers.
+ * The SW itself is registered in index.html on the 'load' event.
+ * This module provides:
+ *  - sendTokenToSW()  — push JWT into SW so it can auth background sync requests
+ *  - requestSync()    — trigger Background Sync tags (or fallback manual trigger)
+ *  - onSyncMessage()  — subscribe to SYNC_COMPLETE messages from the SW
  */
 
 const SYNC_ATTENDANCE = 'sync-attendance';
 const SYNC_REGISTRATIONS = 'sync-registrations';
 
-/** Register the service worker and wire up the token bridge. */
-export async function registerSW(): Promise<void> {
-  if (!('serviceWorker' in navigator)) return;
-
-  try {
-    await navigator.serviceWorker.register('/sw.js');
-  } catch (err) {
-    console.error('[SW] Registration failed:', err);
-    return;
-  }
-
-  // Respond to the SW asking for the JWT token
+// Respond to the SW asking for the JWT token (GET_TOKEN message)
+if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data?.type === 'GET_TOKEN') {
       const token = localStorage.getItem('skillzone_jwt');
