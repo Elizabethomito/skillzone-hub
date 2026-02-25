@@ -20,6 +20,7 @@ export default function SignUp() {
     organization_name: '',
     email: '',
     password: '',
+    confirmPassword: '',
   });
   const [loading, setLoading] = useState(false);
 
@@ -27,12 +28,16 @@ export default function SignUp() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.email.trim() || !form.password.trim()) {
+    if (!form.email.trim() || !form.password.trim() || !form.confirmPassword.trim()) {
       toast({ title: 'Please fill in all required fields', variant: 'destructive' });
       return;
     }
     if (form.password.length < 6) {
       toast({ title: 'Password must be at least 6 characters', variant: 'destructive' });
+      return;
+    }
+    if (form.password !== form.confirmPassword) {
+      toast({ title: 'Passwords do not match', variant: 'destructive' });
       return;
     }
     setLoading(true);
@@ -109,6 +114,10 @@ export default function SignUp() {
             <div>
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" value={form.password} onChange={(e) => update('password', e.target.value)} placeholder="Min 6 characters" className="mt-1.5" required />
+            </div>
+            <div>
+              <Label htmlFor="confirm_password">Confirm Password</Label>
+              <Input id="confirm_password" type="password" value={form.confirmPassword} onChange={(e) => update('confirmPassword', e.target.value)} placeholder="Re-enter your password" className="mt-1.5" required />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Creating account…' : 'Create Account'}
