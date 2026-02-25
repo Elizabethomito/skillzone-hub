@@ -1,95 +1,96 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import {
-  type User,
-  authenticateUser,
-  createUser,
-  getUserById,
-  deleteUser as dbDeleteUser,
-  updateUser as dbUpdateUser,
-  setSession,
-  getSession,
-  clearSession,
-  seedIfEmpty,
-} from '@/db/database';
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from 'react';
+import { auth, users, loadToken, saveToken, removeToken } from '@/lib/api';
+import { sendTokenToSW } from '@/lib/sw';
+import type { User, UserRole } from '@/lib/types';
 
 interface AuthState {
   user: User | null;
+  token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (data: {
-    role: 'user' | 'organization';
-    first_name: string;
-    last_name: string;
-    organization_name: string;
-    email: string;
-    password: string;
-  }) => Promise<void>;
+  register: (data: { email: string; password: string; name: string; role: UserRole }) => Promise<void>;
   logout: () => void;
-  updateProfile: (data: Partial<Pick<User, 'first_name' | 'last_name' | 'organization_name' | 'email'>>) => void;
-  deleteAccount: () => void;
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Rehydrate from stored JWT on mount
   useEffect(() => {
-    seedIfEmpty();
-    const sessionId = getSession();
-    if (sessionId) {
-      const u = getUserById(sessionId);
-      setUser(u);
+    const stored = loadToken();
+    if (!stored) {
+      setIsLoading(false);
+      return;
     }
-    setIsLoading(false);
+    users
+      .me(stored)
+      .then((u) => {
+        setUser(u);
+        setToken(stored);
+        sendTokenToSW(stored);
+      })
+      .catch(() => {
+        removeToken();
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const u = await authenticateUser(email, password);
-    if (!u) throw new Error('Invalid email or password');
-    setSession(u.id);
-    setUser(u);
+    const res = await auth.login({ email, password });
+    saveToken(res.token);
+    sendTokenToSW(res.token);
+    setToken(res.token);
+    setUser(res.user);
   }, []);
 
-  const register = useCallback(async (data: Parameters<AuthState['register']>[0]) => {
-    const u = await createUser(data);
-    setSession(u.id);
-    setUser(u);
-  }, []);
-
-  const logout = useCallback(() => {
-    clearSession();
-    setUser(null);
-  }, []);
-
-  const updateProfile = useCallback(
-    (data: Partial<Pick<User, 'first_name' | 'last_name' | 'organization_name' | 'email'>>) => {
-      if (!user) return;
-      const updated = dbUpdateUser(user.id, data);
-      if (updated) setUser(updated);
+  const register = useCallback(
+    async (data: { email: string; password: string; name: string; role: UserRole }) => {
+      const res = await auth.register(data);
+      saveToken(res.token);
+      sendTokenToSW(res.token);
+      setToken(res.token);
+      setUser(res.user);
     },
-    [user]
+    [],
   );
 
-  const deleteAccount = useCallback(() => {
-    if (!user) return;
-    dbDeleteUser(user.id);
-    clearSession();
+  const logout = useCallback(() => {
+    removeToken();
+    sendTokenToSW(null);
+    setToken(null);
     setUser(null);
-  }, [user]);
+  }, []);
 
   return (
     <AuthContext.Provider
-      value={{ user, isAuthenticated: !!user, isLoading, login, register, logout, updateProfile, deleteAccount }}
+      value={{
+        user,
+        token,
+        isAuthenticated: !!user,
+        isLoading,
+        login,
+        register,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>
   );
 }
 
-export function useAuth() {
+export function useAuth(): AuthState {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;

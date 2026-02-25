@@ -6,6 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
+const DEMO_ACCOUNTS = [
+  { label: 'Host (TechCorp)', email: 'host@techcorp.test', password: 'demo1234' },
+  { label: 'Amara (veteran)', email: 'amara@student.test', password: 'demo1234' },
+  { label: 'Baraka (newcomer)', email: 'baraka@student.test', password: 'demo1234' },
+];
+
 export default function SignIn() {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -39,6 +45,23 @@ export default function SignIn() {
             <h1 className="text-2xl font-bold text-card-foreground">Welcome Back</h1>
             <p className="mt-2 text-sm text-muted-foreground">Sign in to your SkillZone account</p>
           </div>
+          {/* Demo quick-fill */}
+          <div className="mb-6 rounded-lg border border-dashed border-border bg-muted/40 p-3">
+            <p className="mb-2 text-xs font-medium text-muted-foreground">Demo accounts</p>
+            <div className="flex flex-wrap gap-2">
+              {DEMO_ACCOUNTS.map((a) => (
+                <button
+                  key={a.email}
+                  type="button"
+                  onClick={() => { setEmail(a.email); setPassword(a.password); }}
+                  className="rounded-md border border-border bg-background px-2 py-1 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
+                >
+                  {a.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <Label htmlFor="email">Email</Label>

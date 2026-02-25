@@ -7,33 +7,26 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Users, Building2 } from 'lucide-react';
 
-type AccountType = 'user' | 'organization';
+type AccountType = 'student' | 'company';
 
 export default function SignUp() {
   const { register } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [type, setType] = useState<AccountType>('user');
-  const [form, setForm] = useState({
-    first_name: '',
-    last_name: '',
-    organization_name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-  });
+  const [type, setType] = useState<AccountType>('student');
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
   const [loading, setLoading] = useState(false);
 
   const update = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.email.trim() || !form.password.trim() || !form.confirmPassword.trim()) {
+    if (!form.name.trim() || !form.email.trim() || !form.password.trim()) {
       toast({ title: 'Please fill in all required fields', variant: 'destructive' });
       return;
     }
-    if (form.password.length < 6) {
-      toast({ title: 'Password must be at least 6 characters', variant: 'destructive' });
+    if (form.password.length < 8) {
+      toast({ title: 'Password must be at least 8 characters', variant: 'destructive' });
       return;
     }
     if (form.password !== form.confirmPassword) {
@@ -42,14 +35,7 @@ export default function SignUp() {
     }
     setLoading(true);
     try {
-      await register({
-        role: type,
-        first_name: form.first_name.trim(),
-        last_name: form.last_name.trim(),
-        organization_name: form.organization_name.trim(),
-        email: form.email.trim(),
-        password: form.password,
-      });
+      await register({ role: type, name: form.name.trim(), email: form.email.trim(), password: form.password });
       navigate('/dashboard');
     } catch (err: any) {
       toast({ title: err.message || 'Registration failed', variant: 'destructive' });
@@ -70,8 +56,8 @@ export default function SignUp() {
           {/* Account Type Selector */}
           <div className="mb-6 grid grid-cols-2 gap-3">
             {([
-              { key: 'user' as const, icon: Users, label: 'Individual' },
-              { key: 'organization' as const, icon: Building2, label: 'Organization' },
+              { key: 'student' as const, icon: Users, label: 'Student' },
+              { key: 'company' as const, icon: Building2, label: 'Company / Host' },
             ]).map(({ key, icon: Icon, label }) => (
               <button
                 key={key}
@@ -90,30 +76,17 @@ export default function SignUp() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {type === 'user' ? (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="first_name">First Name</Label>
-                  <Input id="first_name" value={form.first_name} onChange={(e) => update('first_name', e.target.value)} className="mt-1.5" required />
-                </div>
-                <div>
-                  <Label htmlFor="last_name">Last Name</Label>
-                  <Input id="last_name" value={form.last_name} onChange={(e) => update('last_name', e.target.value)} className="mt-1.5" required />
-                </div>
-              </div>
-            ) : (
-              <div>
-                <Label htmlFor="org_name">Organization Name</Label>
-                <Input id="org_name" value={form.organization_name} onChange={(e) => update('organization_name', e.target.value)} className="mt-1.5" required />
-              </div>
-            )}
+            <div>
+              <Label htmlFor="name">{type === 'company' ? 'Company Name' : 'Full Name'}</Label>
+              <Input id="name" value={form.name} onChange={(e) => update('name', e.target.value)} className="mt-1.5" required />
+            </div>
             <div>
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" value={form.email} onChange={(e) => update('email', e.target.value)} placeholder="you@example.com" className="mt-1.5" required />
             </div>
             <div>
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={form.password} onChange={(e) => update('password', e.target.value)} placeholder="Min 6 characters" className="mt-1.5" required />
+              <Input id="password" type="password" value={form.password} onChange={(e) => update('password', e.target.value)} placeholder="Min 8 characters" className="mt-1.5" required />
             </div>
             <div>
               <Label htmlFor="confirm_password">Confirm Password</Label>
@@ -125,9 +98,7 @@ export default function SignUp() {
           </form>
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link to="/signin" className="font-medium text-primary hover:underline">
-              Sign In
-            </Link>
+            <Link to="/signin" className="font-medium text-primary hover:underline">Sign In</Link>
           </p>
         </div>
       </div>
