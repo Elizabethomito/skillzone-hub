@@ -48,7 +48,7 @@ export default function Home() {
             <Button size="lg" variant="secondary" asChild className="px-8 text-base font-semibold">
               <Link to="/signup">Get Started</Link>
             </Button>
-            <Button size="lg" variant="outline" asChild className="border-primary-foreground/30 px-8 text-base font-semibold text-primary-foreground hover:bg-primary-foreground/10">
+            <Button size="lg" variant="outline" asChild className="border-primary-foreground/40 bg-primary-foreground/10 px-8 text-base font-semibold text-secondary hover:bg-primary-foreground/20">
               <Link to="/about">Learn More</Link>
             </Button>
           </div>
