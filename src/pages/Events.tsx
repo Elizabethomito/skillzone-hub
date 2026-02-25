@@ -36,16 +36,17 @@ export default function Events() {
     return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
   }, []);
 
-  // Load events + registrations
   const loadData = useCallback(async () => {
     if (!token) return;
+    setLoading(true);
     try {
-      const [evs, regs] = await Promise.all([
-        eventsApi.list(token),
-        user?.role === 'student' ? eventsApi['list'](token).then(() => import('@/lib/api').then(m => m.users.myRegistrations(token))) : Promise.resolve([]),
-      ]);
+      const evs = await eventsApi.list(token);
       setEventList(evs);
-      setMyRegs(regs as RegistrationWithEvent[]);
+      if (user?.role === 'student') {
+        const { users: usersApi } = await import('@/lib/api');
+        const regs = await usersApi.myRegistrations(token);
+        setMyRegs(regs);
+      }
     } catch {
       // Offline — show cached data or empty
     } finally {
@@ -53,27 +54,7 @@ export default function Events() {
     }
   }, [token, user?.role]);
 
-  // Also load actual registrations for students
-  useEffect(() => {
-    if (!token) return;
-    setLoading(true);
-    const load = async () => {
-      try {
-        const evs = await eventsApi.list(token);
-        setEventList(evs);
-        if (user?.role === 'student') {
-          const { users: usersApi } = await import('@/lib/api');
-          const regs = await usersApi.myRegistrations(token);
-          setMyRegs(regs);
-        }
-      } catch {
-        // stay with empty / stale
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [token, user?.role]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   // Load pending offline registrations from IndexedDB
   useEffect(() => {
@@ -232,10 +213,9 @@ export default function Events() {
                         ) : (
                           <Button
                             onClick={() => handleApply(event)}
-                            disabled={isFull && isOnline}
                             className="w-full"
                           >
-                            {isFull && isOnline ? 'Full — Apply anyway' : !isOnline ? '📥 Apply (offline)' : 'Apply / Register'}
+                            {!isOnline ? '📥 Apply (offline)' : isFull ? 'Apply (full — join queue)' : 'Apply / Register'}
                           </Button>
                         )}
                         {event.status === 'active' && (
