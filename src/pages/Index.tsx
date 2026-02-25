@@ -120,3 +120,4 @@ export default function Home() {
     </div>
   );
 }
+// End of Home page component
